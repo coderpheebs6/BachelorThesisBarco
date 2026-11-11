@@ -38,6 +38,57 @@ function OnionModel({ modelUrl }) {
   return <primitive object={model} />
 }
 
+// Projects a purple trapezoid from the projector lens onto the grid.
+function ProjectorBeam({ position, rotation }) {
+  const { lineGeometry, fillGeometry } = useMemo(() => {
+    // Use the same Y rotation as the projector model.
+    const forward = new THREE.Vector3(Math.sin(rotation), 0, Math.cos(rotation))
+    const side = new THREE.Vector3(forward.z, 0, -forward.x).normalize()
+    const origin = new THREE.Vector3(...position).addScaledVector(
+      forward,
+      0.45,
+    )
+    origin.addScaledVector(side, 0.18)
+    origin.y = 0.2
+    const targetCenter = origin.clone().addScaledVector(forward, 5)
+    targetCenter.y = 0.02
+    const leftTarget = targetCenter.clone().addScaledVector(side, -1.15)
+    const rightTarget = targetCenter.clone().addScaledVector(side, 1.15)
+    const line = new THREE.BufferGeometry().setFromPoints([
+      origin,
+      leftTarget,
+      origin,
+      rightTarget,
+    ])
+    const fill = new THREE.BufferGeometry()
+    fill.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [...origin.toArray(), ...leftTarget.toArray(), ...rightTarget.toArray()],
+        3,
+      ),
+    )
+    return { lineGeometry: line, fillGeometry: fill }
+  }, [position, rotation])
+
+  return (
+    <>
+      <line geometry={lineGeometry}>
+        <lineBasicMaterial color="#b76cff" transparent opacity={0.9} />
+      </line>
+      <mesh geometry={fillGeometry}>
+        <meshBasicMaterial
+          color="#a855f7"
+          transparent
+          opacity={0.16}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  )
+}
+
 // Renders one onion and handles selection, dragging, and rotation.
 function TestCube({
   cube,
@@ -124,22 +175,36 @@ function StackingScene({
 }) {
   return (
     <>
+      <color attach="background" args={['#171922']} />
+      <fog attach="fog" args={['#171922', 10, 28]} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 5, 5]} intensity={1.5} />
       {cubes.map((cube) => (
-        <TestCube
-          key={cube.id}
-          cube={cube}
-          modelUrl={modelUrl}
-          selected={cube.id === selectedId}
-          onSelect={onSelect}
-          onMove={onMove}
-          onBeginDrag={onBeginDrag}
-          onRotate={onRotate}
-          onDragChange={onDragChange}
-        />
+        <group key={cube.id}>
+          <ProjectorBeam position={cube.position} rotation={cube.rotation} />
+          <TestCube
+            cube={cube}
+            modelUrl={modelUrl}
+            selected={cube.id === selectedId}
+            onSelect={onSelect}
+            onMove={onMove}
+            onBeginDrag={onBeginDrag}
+            onRotate={onRotate}
+            onDragChange={onDragChange}
+          />
+        </group>
       ))}
-      <Grid args={[10, 10]} />
+      <Grid
+        args={[20, 20]}
+        cellSize={1}
+        sectionSize={5}
+        cellThickness={0.5}
+        sectionThickness={1}
+        cellColor="#343746"
+        sectionColor="#656b80"
+        fadeDistance={24}
+        fadeStrength={1.5}
+      />
       <OrbitControls makeDefault enabled={!dragging} />
     </>
   )
@@ -149,17 +214,20 @@ function StackingScene({
 export default function StackingTests({
   modelUrl = onionModelUrl,
   objectLabel = 'onion',
+  initialObjects = [initialCube],
 }) {
-  const [cubes, setCubes] = useState([initialCube])
-  const [selectedId, setSelectedId] = useState(initialCube.id)
-  const [nextId, setNextId] = useState(2)
+  const [cubes, setCubes] = useState(initialObjects)
+  const [selectedId, setSelectedId] = useState(initialObjects[0]?.id ?? null)
+  const [nextId, setNextId] = useState(
+    initialObjects.reduce((highest, object) => Math.max(highest, object.id), 0) + 1,
+  )
   const [dragging, setDragging] = useState(false)
 
   // Adds a new cube at the centre of the grid.
   const addCube = () => {
     setCubes((current) => [
       ...current,
-      { id: nextId, position: [current.length * 1.5, 0.5, 0], rotation: 0 },
+      { id: nextId, position: [current.length * 1.5, 0.5, 0], rotation: Math.PI },
     ])
     setSelectedId(nextId)
     setNextId((id) => id + 1)
