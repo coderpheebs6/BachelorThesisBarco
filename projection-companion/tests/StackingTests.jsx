@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import ProjectionSidebar from '../src/components/ProjectionSidebar'
 
 const cubeHeight = 1
 // Cubes must overlap substantially before they can stack.
@@ -272,12 +273,13 @@ export default function StackingTests() {
           dragging={dragging}
         />
       </Canvas>
+      <ProjectionSidebar />
       <aside
         style={{
           position: 'absolute',
-          top: 16,
           right: 16,
-          width: 290,
+          bottom: 16,
+          width: 220,
           padding: 18,
           borderRadius: 12,
           background: 'rgba(255, 255, 255, 0.94)',
@@ -286,14 +288,13 @@ export default function StackingTests() {
           boxShadow: '0 4px 18px rgba(0, 0, 0, 0.18)',
         }}
       >
-        <h1 style={{ margin: '0 0 12px', fontSize: 20 }}>Cube stacking tests</h1>
-        <p style={{ margin: '0 0 12px', fontSize: 14 }}>
-          Select a cube, move it on the grid, or hold Shift while dragging to rotate it.
-        </p>
-        <button type="button" onClick={addCube}>Add cube</button>{' '}
-        <button type="button" onClick={stackSelected} disabled={!selectedId}>Stack selected</button>{' '}
-        <button type="button" onClick={removeSelected} disabled={!selectedId}>Remove selected</button>
-        <p style={{ margin: '14px 0 0', fontSize: 14 }}>Cubes: {cubes.length}</p>
+        <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Stacking</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+          <button type="button" onClick={addCube}>Add cube</button>
+          <button type="button" onClick={stackSelected} disabled={!selectedId}>Stack</button>
+          <button type="button" onClick={removeSelected} disabled={!selectedId}>Remove</button>
+        </div>
+        <p style={{ margin: 0, fontSize: 14 }}>Cubes: {cubes.length}</p>
         <p style={{ margin: '4px 0 0', fontSize: 14 }}>
           Selected: {selectedId ?? 'none'}
         </p>

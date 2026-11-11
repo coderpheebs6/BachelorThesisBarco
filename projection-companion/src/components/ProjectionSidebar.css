@@ -1,0 +1,314 @@
+.projection-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 224px;
+  height: 100%;
+  padding: 14px 10px 18px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: #f5f3ff;
+  background: #28273e;
+  font: 11px/1.3 system-ui, sans-serif;
+}
+
+.sidebar-header,
+.card-title-row,
+.alignment-heading,
+.projector-row,
+.camera-row,
+.settings-actions {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-header {
+  justify-content: space-between;
+  margin: 0 4px 14px;
+}
+
+.projection-mode {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #8e55ff;
+  border-radius: 5px;
+}
+
+.projection-mode button,
+.back-button,
+.icon-button,
+.projector-tabs button,
+.settings-heading small,
+.value-fields button {
+  border: 0;
+  color: #ddd7f5;
+  background: transparent;
+  font: inherit;
+}
+
+.projection-mode button {
+  padding: 3px 8px;
+}
+
+.projection-mode button.active,
+.projector-tabs button.active,
+.value-fields button.active {
+  color: #fff;
+  background: #7440d5;
+}
+
+.back-button,
+.icon-button {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.projection-card {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #484660;
+  border-radius: 9px;
+  background: #29283f;
+}
+
+.alignment-card {
+  padding: 10px;
+  color: #24233a;
+  background: #faf9ff;
+}
+
+.alignment-heading {
+  width: 100%;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.alignment-heading > span:nth-child(2) {
+  flex: 1;
+}
+
+.alignment-heading strong,
+.card-title-row strong,
+.controls-card > strong {
+  display: block;
+  font-size: 11px;
+}
+
+.alignment-heading small,
+.card-title-row small,
+.projector-details small,
+.settings-heading small,
+.value-grid small {
+  display: block;
+  color: #aaa5c9;
+  font-size: 9px;
+}
+
+.alignment-heading small {
+  color: #6f6a89;
+}
+
+.step-number {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #44328f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.status-dot,
+.connection-status,
+.aligned-label {
+  color: #8bd326;
+}
+
+.status-dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #75bb13;
+  border-radius: 50%;
+  background: #dcf4a8;
+}
+
+.alignment-progress {
+  margin: 8px 0 0 29px;
+  color: #716b89;
+  font-size: 9px;
+}
+
+.card-title-row {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.icon-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: #fff;
+  background: #6330c4;
+}
+
+.projector-row {
+  gap: 8px;
+  min-height: 31px;
+}
+
+.projector-preview {
+  display: inline-block;
+  width: 18px;
+  height: 16px;
+  flex: 0 0 auto;
+  background: #f3f1f5;
+}
+
+.projector-details {
+  flex: 1;
+}
+
+.projector-details strong {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.connection-status {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: #78c914;
+}
+
+.connection-status svg {
+  color: #fff;
+}
+
+.info-note {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 7px;
+  border: 1px solid #55516f;
+  border-radius: 5px;
+  color: #bcb7d6;
+  font-size: 8px;
+}
+
+.camera-row {
+  gap: 8px;
+  color: #bcb7d6;
+  font-size: 9px;
+}
+
+.camera-row span:nth-child(2) {
+  flex: 1;
+}
+
+.green-icon {
+  color: #83d21a;
+}
+
+.re-align-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 5px;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: linear-gradient(90deg, #4322af, #7a36dd);
+  font: inherit;
+  cursor: pointer;
+}
+
+.projector-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 7px 0 9px;
+}
+
+.projector-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.projector-tabs .projector-preview {
+  width: 10px;
+  height: 9px;
+}
+
+.settings-heading {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.settings-heading strong {
+  margin-right: auto;
+}
+
+.settings-heading small {
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: #403d5a;
+}
+
+.value-grid > div {
+  margin-top: 8px;
+}
+
+.value-fields {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.value-fields span,
+.value-fields button {
+  min-width: 33px;
+  padding: 3px 4px;
+  border: 1px solid #55516f;
+  border-radius: 3px;
+  box-sizing: border-box;
+  text-align: center;
+  color: #e5e1f4;
+  background: #201f34;
+  font-size: 8px;
+}
+
+.value-fields button {
+  cursor: pointer;
+}
+
+.settings-actions {
+  gap: 12px;
+  margin-top: 10px;
+  color: #bdb8d8;
+}
+
+.settings-actions .re-align-button {
+  width: auto;
+  margin: 0 auto 0 0;
+  padding: 5px 8px;
+}
