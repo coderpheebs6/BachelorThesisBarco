@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { Grid, OrbitControls } from '@react-three/drei'
+import { Grid, OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import ProjectionSidebar from '../src/components/ProjectionSidebar'
+import onionModelUrl from '../src/models/onion-model.gltf/yellow_onion_4k.gltf?url'
 
 const cubeHeight = 1
 // Cubes must overlap substantially before they can stack.
 const snapDistance = 0.35
-const initialCube = { id: 1, position: [-2, 0.5, 0], rotation: 0 }
+const initialCube = { id: 1, position: [0, 0.5, 0], rotation: 0 }
 
 // Converts pointer input to a position on the horizontal grid.
 function pointerOnGrid(event, camera, gl, raycaster, plane, intersection) {
@@ -19,9 +20,28 @@ function pointerOnGrid(event, camera, gl, raycaster, plane, intersection) {
   return raycaster.current.ray.intersectPlane(plane.current, intersection.current)
 }
 
-// Renders one cube and handles selection, dragging, and rotation.
+// Loads a reusable onion model for each scene object.
+function OnionModel({ modelUrl }) {
+  const { scene } = useGLTF(modelUrl)
+  const model = useMemo(() => {
+    const clone = scene.clone()
+    const bounds = new THREE.Box3().setFromObject(clone)
+    const size = bounds.getSize(new THREE.Vector3())
+    const center = bounds.getCenter(new THREE.Vector3())
+    const scale = 1 / Math.max(size.x, size.y, size.z)
+
+    clone.scale.setScalar(scale)
+    clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+    return clone
+  }, [scene])
+
+  return <primitive object={model} />
+}
+
+// Renders one onion and handles selection, dragging, and rotation.
 function TestCube({
   cube,
+  modelUrl,
   selected,
   onSelect,
   onMove,
@@ -39,9 +59,10 @@ function TestCube({
   const snapped = useRef(false)
 
   return (
-    <mesh
+    <group
       position={cube.position}
       rotation={[0, cube.rotation, 0]}
+      scale={selected ? 1.05 : 1}
       onClick={(event) => {
         event.stopPropagation()
         onSelect(cube.id)
@@ -82,15 +103,17 @@ function TestCube({
         event.target.releasePointerCapture(event.pointerId)
       }}
     >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={selected ? 'hotpink' : 'steelblue'} />
-    </mesh>
+      <OnionModel modelUrl={modelUrl} />
+    </group>
   )
 }
+
+useGLTF.preload(onionModelUrl)
 
 // Displays the cubes, grid, lights, and camera controls.
 function StackingScene({
   cubes,
+  modelUrl,
   selectedId,
   onSelect,
   onMove,
@@ -107,6 +130,7 @@ function StackingScene({
         <TestCube
           key={cube.id}
           cube={cube}
+          modelUrl={modelUrl}
           selected={cube.id === selectedId}
           onSelect={onSelect}
           onMove={onMove}
@@ -122,7 +146,10 @@ function StackingScene({
 }
 
 // Provides controls for adding, stacking, moving, and removing cubes.
-export default function StackingTests() {
+export default function StackingTests({
+  modelUrl = onionModelUrl,
+  objectLabel = 'onion',
+}) {
   const [cubes, setCubes] = useState([initialCube])
   const [selectedId, setSelectedId] = useState(initialCube.id)
   const [nextId, setNextId] = useState(2)
@@ -132,7 +159,7 @@ export default function StackingTests() {
   const addCube = () => {
     setCubes((current) => [
       ...current,
-      { id: nextId, position: [-2 - current.length * 1.5, 0.5, 0], rotation: 0 },
+      { id: nextId, position: [current.length * 1.5, 0.5, 0], rotation: 0 },
     ])
     setSelectedId(nextId)
     setNextId((id) => id + 1)
@@ -264,6 +291,7 @@ export default function StackingTests() {
       <Canvas camera={{ position: [5, 4, 5], fov: 50 }}>
         <StackingScene
           cubes={cubes}
+          modelUrl={modelUrl}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onMove={moveCube}
@@ -290,11 +318,13 @@ export default function StackingTests() {
       >
         <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Stacking</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-          <button type="button" onClick={addCube}>Add cube</button>
+          <button type="button" onClick={addCube}>Add {objectLabel}</button>
           <button type="button" onClick={stackSelected} disabled={!selectedId}>Stack</button>
           <button type="button" onClick={removeSelected} disabled={!selectedId}>Remove</button>
         </div>
-        <p style={{ margin: 0, fontSize: 14 }}>Cubes: {cubes.length}</p>
+        <p style={{ margin: 0, fontSize: 14 }}>
+          {objectLabel[0].toUpperCase() + objectLabel.slice(1)}s: {cubes.length}
+        </p>
         <p style={{ margin: '4px 0 0', fontSize: 14 }}>
           Selected: {selectedId ?? 'none'}
         </p>
