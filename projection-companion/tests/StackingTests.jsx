@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { Grid, OrbitControls } from '@react-three/drei'
+import { Grid, OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import ProjectionSidebar from '../src/components/ProjectionSidebar'
+import onionModelUrl from '../src/models/onion-model.gltf/yellow_onion_4k.gltf?url'
 
 const cubeHeight = 1
 // Cubes must overlap substantially before they can stack.
 const snapDistance = 0.35
-const initialCube = { id: 1, position: [-2, 0.5, 0], rotation: 0 }
+const initialCube = { id: 1, position: [0, 0.5, 0], rotation: 0 }
 
 // Converts pointer input to a position on the horizontal grid.
 function pointerOnGrid(event, camera, gl, raycaster, plane, intersection) {
@@ -19,9 +20,79 @@ function pointerOnGrid(event, camera, gl, raycaster, plane, intersection) {
   return raycaster.current.ray.intersectPlane(plane.current, intersection.current)
 }
 
-// Renders one cube and handles selection, dragging, and rotation.
+// Loads a reusable onion model for each scene object.
+function OnionModel({ modelUrl }) {
+  const { scene } = useGLTF(modelUrl)
+  const model = useMemo(() => {
+    const clone = scene.clone()
+    const bounds = new THREE.Box3().setFromObject(clone)
+    const size = bounds.getSize(new THREE.Vector3())
+    const center = bounds.getCenter(new THREE.Vector3())
+    const scale = 1 / Math.max(size.x, size.y, size.z)
+
+    clone.scale.setScalar(scale)
+    clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+    return clone
+  }, [scene])
+
+  return <primitive object={model} />
+}
+
+// Projects a purple trapezoid from the projector lens onto the grid.
+function ProjectorBeam({ position, rotation }) {
+  const { lineGeometry, fillGeometry } = useMemo(() => {
+    // Use the same Y rotation as the projector model.
+    const forward = new THREE.Vector3(Math.sin(rotation), 0, Math.cos(rotation))
+    const side = new THREE.Vector3(forward.z, 0, -forward.x).normalize()
+    const origin = new THREE.Vector3(...position).addScaledVector(
+      forward,
+      0.45,
+    )
+    origin.addScaledVector(side, 0.18)
+    origin.y = 0.2
+    const targetCenter = origin.clone().addScaledVector(forward, 5)
+    targetCenter.y = 0.02
+    const leftTarget = targetCenter.clone().addScaledVector(side, -1.15)
+    const rightTarget = targetCenter.clone().addScaledVector(side, 1.15)
+    const line = new THREE.BufferGeometry().setFromPoints([
+      origin,
+      leftTarget,
+      origin,
+      rightTarget,
+    ])
+    const fill = new THREE.BufferGeometry()
+    fill.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [...origin.toArray(), ...leftTarget.toArray(), ...rightTarget.toArray()],
+        3,
+      ),
+    )
+    return { lineGeometry: line, fillGeometry: fill }
+  }, [position, rotation])
+
+  return (
+    <>
+      <line geometry={lineGeometry}>
+        <lineBasicMaterial color="#b76cff" transparent opacity={0.9} />
+      </line>
+      <mesh geometry={fillGeometry}>
+        <meshBasicMaterial
+          color="#a855f7"
+          transparent
+          opacity={0.16}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  )
+}
+
+// Renders one onion and handles selection, dragging, and rotation.
 function TestCube({
   cube,
+  modelUrl,
   selected,
   onSelect,
   onMove,
@@ -39,9 +110,10 @@ function TestCube({
   const snapped = useRef(false)
 
   return (
-    <mesh
+    <group
       position={cube.position}
       rotation={[0, cube.rotation, 0]}
+      scale={selected ? 1.05 : 1}
       onClick={(event) => {
         event.stopPropagation()
         onSelect(cube.id)
@@ -82,15 +154,17 @@ function TestCube({
         event.target.releasePointerCapture(event.pointerId)
       }}
     >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={selected ? 'hotpink' : 'steelblue'} />
-    </mesh>
+      <OnionModel modelUrl={modelUrl} />
+    </group>
   )
 }
+
+useGLTF.preload(onionModelUrl)
 
 // Displays the cubes, grid, lights, and camera controls.
 function StackingScene({
   cubes,
+  modelUrl,
   selectedId,
   onSelect,
   onMove,
@@ -101,38 +175,59 @@ function StackingScene({
 }) {
   return (
     <>
+      <color attach="background" args={['#171922']} />
+      <fog attach="fog" args={['#171922', 10, 28]} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 5, 5]} intensity={1.5} />
       {cubes.map((cube) => (
-        <TestCube
-          key={cube.id}
-          cube={cube}
-          selected={cube.id === selectedId}
-          onSelect={onSelect}
-          onMove={onMove}
-          onBeginDrag={onBeginDrag}
-          onRotate={onRotate}
-          onDragChange={onDragChange}
-        />
+        <group key={cube.id}>
+          <ProjectorBeam position={cube.position} rotation={cube.rotation} />
+          <TestCube
+            cube={cube}
+            modelUrl={modelUrl}
+            selected={cube.id === selectedId}
+            onSelect={onSelect}
+            onMove={onMove}
+            onBeginDrag={onBeginDrag}
+            onRotate={onRotate}
+            onDragChange={onDragChange}
+          />
+        </group>
       ))}
-      <Grid args={[10, 10]} />
+      <Grid
+        args={[20, 20]}
+        cellSize={1}
+        sectionSize={5}
+        cellThickness={0.5}
+        sectionThickness={1}
+        cellColor="#343746"
+        sectionColor="#656b80"
+        fadeDistance={24}
+        fadeStrength={1.5}
+      />
       <OrbitControls makeDefault enabled={!dragging} />
     </>
   )
 }
 
 // Provides controls for adding, stacking, moving, and removing cubes.
-export default function StackingTests() {
-  const [cubes, setCubes] = useState([initialCube])
-  const [selectedId, setSelectedId] = useState(initialCube.id)
-  const [nextId, setNextId] = useState(2)
+export default function StackingTests({
+  modelUrl = onionModelUrl,
+  objectLabel = 'onion',
+  initialObjects = [initialCube],
+}) {
+  const [cubes, setCubes] = useState(initialObjects)
+  const [selectedId, setSelectedId] = useState(initialObjects[0]?.id ?? null)
+  const [nextId, setNextId] = useState(
+    initialObjects.reduce((highest, object) => Math.max(highest, object.id), 0) + 1,
+  )
   const [dragging, setDragging] = useState(false)
 
   // Adds a new cube at the centre of the grid.
   const addCube = () => {
     setCubes((current) => [
       ...current,
-      { id: nextId, position: [-2 - current.length * 1.5, 0.5, 0], rotation: 0 },
+      { id: nextId, position: [current.length * 1.5, 0.5, 0], rotation: Math.PI },
     ])
     setSelectedId(nextId)
     setNextId((id) => id + 1)
@@ -264,6 +359,7 @@ export default function StackingTests() {
       <Canvas camera={{ position: [5, 4, 5], fov: 50 }}>
         <StackingScene
           cubes={cubes}
+          modelUrl={modelUrl}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onMove={moveCube}
@@ -290,11 +386,13 @@ export default function StackingTests() {
       >
         <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>Stacking</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-          <button type="button" onClick={addCube}>Add cube</button>
+          <button type="button" onClick={addCube}>Add {objectLabel}</button>
           <button type="button" onClick={stackSelected} disabled={!selectedId}>Stack</button>
           <button type="button" onClick={removeSelected} disabled={!selectedId}>Remove</button>
         </div>
-        <p style={{ margin: 0, fontSize: 14 }}>Cubes: {cubes.length}</p>
+        <p style={{ margin: 0, fontSize: 14 }}>
+          {objectLabel[0].toUpperCase() + objectLabel.slice(1)}s: {cubes.length}
+        </p>
         <p style={{ margin: '4px 0 0', fontSize: 14 }}>
           Selected: {selectedId ?? 'none'}
         </p>
