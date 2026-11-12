@@ -195,15 +195,16 @@ function StackingScene({
         </group>
       ))}
       <Grid
-        args={[20, 20]}
-        cellSize={1}
-        sectionSize={5}
+        infiniteGrid
+        args={[100, 100]}
+        cellSize={0.5}
+        sectionSize={2.5}
         cellThickness={0.5}
         sectionThickness={1}
         cellColor="#343746"
         sectionColor="#656b80"
-        fadeDistance={24}
-        fadeStrength={1.5}
+        fadeDistance={60}
+        fadeStrength={0.35}
       />
       <OrbitControls makeDefault enabled={!dragging} />
     </>
