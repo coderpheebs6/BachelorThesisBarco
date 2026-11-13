@@ -1,1 +1,1 @@
-export { default } from '../tests/ProjectorTests.jsx'
+export { default } from '../tests/TargetSelectionTests.jsx'

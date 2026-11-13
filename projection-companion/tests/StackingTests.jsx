@@ -4,6 +4,7 @@ import { Grid, OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import ProjectionSidebar from '../src/components/ProjectionSidebar'
 import onionModelUrl from '../src/models/onion-model.gltf/yellow_onion_4k.gltf?url'
+import towerModelUrl from '../src/models/christmas-clock-tower.glb?url'
 
 const cubeHeight = 1
 // Cubes must overlap substantially before they can stack.
@@ -38,20 +39,41 @@ function OnionModel({ modelUrl }) {
   return <primitive object={model} />
 }
 
+// Loads the static tower and places its base on the grid.
+function TowerModel({ modelUrl }) {
+  const { scene } = useGLTF(modelUrl)
+  const model = useMemo(() => {
+    const clone = scene.clone()
+    const bounds = new THREE.Box3().setFromObject(clone)
+    const size = bounds.getSize(new THREE.Vector3())
+    const center = bounds.getCenter(new THREE.Vector3())
+    const scale = 4 / size.y
+
+    clone.scale.setScalar(scale)
+    clone.position.set(
+      -center.x * scale,
+      -bounds.min.y * scale,
+      -center.z * scale,
+    )
+    return clone
+  }, [scene])
+
+  return <primitive object={model} />
+}
+
 // Projects a purple trapezoid from the projector lens onto the grid.
 function ProjectorBeam({ position, rotation }) {
   const { lineGeometry, fillGeometry } = useMemo(() => {
     // Use the same Y rotation as the projector model.
     const forward = new THREE.Vector3(Math.sin(rotation), 0, Math.cos(rotation))
-    const side = new THREE.Vector3(forward.z, 0, -forward.x).normalize()
     const origin = new THREE.Vector3(...position).addScaledVector(
       forward,
       0.45,
     )
+    const side = new THREE.Vector3(forward.z, 0, -forward.x).normalize()
     origin.addScaledVector(side, 0.18)
     origin.y = 0.2
     const targetCenter = origin.clone().addScaledVector(forward, 5)
-    targetCenter.y = 0.02
     const leftTarget = targetCenter.clone().addScaledVector(side, -1.15)
     const rightTarget = targetCenter.clone().addScaledVector(side, 1.15)
     const line = new THREE.BufferGeometry().setFromPoints([
@@ -165,6 +187,7 @@ useGLTF.preload(onionModelUrl)
 function StackingScene({
   cubes,
   modelUrl,
+  towerModelUrl: sceneTowerModelUrl,
   selectedId,
   onSelect,
   onMove,
@@ -179,9 +202,17 @@ function StackingScene({
       <fog attach="fog" args={['#171922', 10, 28]} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 5, 5]} intensity={1.5} />
+      {sceneTowerModelUrl && (
+        <group position={[0, 0, 0]}>
+          <TowerModel modelUrl={sceneTowerModelUrl} />
+        </group>
+      )}
       {cubes.map((cube) => (
         <group key={cube.id}>
-          <ProjectorBeam position={cube.position} rotation={cube.rotation} />
+          <ProjectorBeam
+            position={cube.position}
+            rotation={cube.rotation}
+          />
           <TestCube
             cube={cube}
             modelUrl={modelUrl}
@@ -214,6 +245,7 @@ function StackingScene({
 // Provides controls for adding, stacking, moving, and removing cubes.
 export default function StackingTests({
   modelUrl = onionModelUrl,
+  towerModelUrl: sceneTowerModelUrl = towerModelUrl,
   objectLabel = 'onion',
   initialObjects = [initialCube],
 }) {
@@ -361,6 +393,7 @@ export default function StackingTests({
         <StackingScene
           cubes={cubes}
           modelUrl={modelUrl}
+          towerModelUrl={sceneTowerModelUrl}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onMove={moveCube}
